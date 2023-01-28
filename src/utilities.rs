@@ -4,13 +4,13 @@ use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 
 #[derive(Debug)]
 pub enum TidiiError {
-    IoError(std::io::Error),
+    StdIoError(std::io::Error),
     SystemTimeError(SystemTimeError),
 }
 
 impl From<std::io::Error> for TidiiError {
     fn from(error: std::io::Error) -> Self {
-        TidiiError::IoError(error)
+        TidiiError::StdIoError(error)
     }
 }
 
@@ -37,7 +37,7 @@ pub fn system_time_to_date_time(t: SystemTime) -> DateTime<Local> {
     Local.timestamp_opt(sec, nsec).single().expect("Boom!")
 }
 
-pub fn duration_in_days(meta_data: &Metadata) -> Result<f64, TidiiError> {
+pub fn days_since_last_access(meta_data: &Metadata) -> Result<f64, TidiiError> {
     let now = SystemTime::now();
     let accessed_time = meta_data.accessed()?;
     let file_age_in_sec = now.duration_since(accessed_time)?.as_secs() as f64;
