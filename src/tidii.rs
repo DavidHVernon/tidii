@@ -6,7 +6,7 @@ use std::fs::{create_dir_all, read_dir, rename, DirEntry, Metadata};
 use std::path::PathBuf;
 
 pub fn scan_dir_for_old_files(
-    dir_path: PathBuf,
+    dir_path: &PathBuf,
     cutoff_days: u16,
     log_fn: &Box<dyn Fn(&str) -> ()>,
 ) -> Result<(), TidiiError> {

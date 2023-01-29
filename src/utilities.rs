@@ -43,9 +43,9 @@ pub fn system_time_to_date_time(t: SystemTime) -> DateTime<Local> {
 pub fn days_since_last_access(meta_data: &Metadata) -> Result<f64, TidiiError> {
     let now = SystemTime::now();
     let accessed_time = meta_data.accessed()?;
-    let file_age_in_sec = now.duration_since(accessed_time)?.as_secs() as f64;
+    let file_age_in_sec = now.duration_since(accessed_time)?.as_secs();
     // 60 sec / min * 60 min / hour * 24 hour / day
-    let file_age_in_days = file_age_in_sec / 60.0 / 60.0 / 24.0;
+    let file_age_in_days = seconds_to_fractional_days(file_age_in_sec);
 
     Ok(file_age_in_days)
 }
@@ -85,4 +85,12 @@ pub fn get_log_fn() -> Box<dyn Fn(&str) -> ()> {
     });
 
     log_fn
+}
+
+pub fn hours_to_sec(hour: u64) -> u64 {
+    hour * 60 * 60
+}
+
+pub fn seconds_to_fractional_days(s: u64) -> f64 {
+    s as f64 / 60.0 / 60.0 / 24.0
 }
