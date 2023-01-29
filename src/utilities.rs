@@ -1,7 +1,9 @@
 use chrono::{DateTime, Local, TimeZone};
+use dirs::home_dir;
 use std::fs::Metadata;
 use std::path::PathBuf;
 use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
+use std::{fs::OpenOptions, io::Write};
 
 #[derive(Debug)]
 pub enum TidiiError {
@@ -62,4 +64,25 @@ pub fn is_dot_file(file_path: &PathBuf) -> bool {
     } else {
         false
     }
+}
+
+pub fn get_log_fn() -> Box<dyn Fn(&str) -> ()> {
+    // log to ~/.tidii.log
+    let log_file_path = home_dir()
+        .expect("Could not find home directory.")
+        .join(".tidii.log");
+
+    let log_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open(log_file_path)
+        .expect("Could not open log file: ~/.tidii.log");
+
+    let log_fn: Box<dyn Fn(&str) -> ()> = Box::new(move |output: &str| -> () {
+        let _ = writeln!(&log_file, "{}", output);
+        let _ = log_file.sync_all();
+    });
+
+    log_fn
 }

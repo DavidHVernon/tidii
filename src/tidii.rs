@@ -1,17 +1,27 @@
 use crate::utilities::{days_since_last_access, is_dot_file, system_time_to_date_time, TidiiError};
+use chrono::offset;
 use chrono::Datelike;
 use dirs::desktop_dir;
 use std::fs::{create_dir_all, read_dir, rename, DirEntry, Metadata};
 use std::path::PathBuf;
 
-pub fn scan_dir_for_old_files(dir_path: PathBuf, cutoff_days: u16) -> Result<(), TidiiError> {
+pub fn scan_dir_for_old_files(
+    dir_path: PathBuf,
+    cutoff_days: u16,
+    log_fn: &Box<dyn Fn(&str) -> ()>,
+) -> Result<(), TidiiError> {
     assert!(
         dir_path.is_dir(),
         "Not a directory: {}.",
         dir_path.display()
     );
-    println!("------ ");
-    println!("Scan:  {}", dir_path.display());
+
+    log_fn("------ ");
+    log_fn(&format!(
+        "       {}",
+        offset::Local::now().format("%Y-%m-%d %H:%M:%S")
+    ));
+    log_fn(&format!("Scan:  {}", dir_path.display()));
 
     // Scan the dir for files over n days old.
     for child_entry in read_dir(&dir_path)? {
@@ -25,17 +35,24 @@ pub fn scan_dir_for_old_files(dir_path: PathBuf, cutoff_days: u16) -> Result<(),
         match move_to_file_cabinet_if_old(&child_path, &child_entry, cutoff_days) {
             Ok(moved) => {
                 if moved {
-                    println!("Moved: {:?}", child_entry.file_name());
+                    log_fn(&format!("Moved: {:?}", child_entry.file_name()));
                 } else {
-                    println!("Left:  {:?}", child_entry.file_name());
+                    log_fn(&format!("Left:  {:?}", child_entry.file_name()));
                 }
             }
             Err(err) => {
-                println!("Error: {:?} - {:#?}", child_entry.file_name(), err);
+                log_fn(&format!(
+                    "Error: {:?} - {:#?}",
+                    child_entry.file_name(),
+                    err
+                ));
             }
         }
     }
-    println!("------ ");
+    log_fn(&format!(
+        "       {}",
+        offset::Local::now().format("%Y-%m-%d %H:%M:%S")
+    ));
 
     Ok(())
 }
