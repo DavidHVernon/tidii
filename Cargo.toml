@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 dirs = "4.0.0"
 chrono = "0.4.23"
+clap = { version = "4.2.1", features = ["derive"] }

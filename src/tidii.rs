@@ -1,13 +1,37 @@
-use crate::utilities::{days_since_last_access, is_dot_file, system_time_to_date_time, TidiiError};
+use crate::args::Args;
+use crate::utilities::{
+    days_since_last_access, get_log_fn, hours_to_sec, is_dot_file, system_time_to_date_time,
+    TidiiError,
+};
 use chrono::offset;
 use chrono::Datelike;
 use dirs::desktop_dir;
 use std::fs::{create_dir_all, read_dir, rename, DirEntry, Metadata};
 use std::path::PathBuf;
+use std::thread::sleep;
+use std::time::Duration;
+
+pub fn tidii_run_loop(args: Args) {
+    let log_fn = get_log_fn();
+    let desktop_dir_path = desktop_dir().expect("Could not find the desktop directory.");
+    let frequency = value_or_default(args.frequency, 1);
+
+    loop {
+        match scan_dir_for_old_files(&desktop_dir_path, args.days, &log_fn) {
+            Ok(()) => {
+                log_fn("Scan Complete");
+                sleep(Duration::from_secs(hours_to_sec(frequency)));
+            }
+            Err(err) => {
+                log_fn(&format!("{:#?}", err));
+            }
+        }
+    }
+}
 
 pub fn scan_dir_for_old_files(
     dir_path: &PathBuf,
-    cutoff_days: u16,
+    cutoff_days: Option<u16>,
     log_fn: &Box<dyn Fn(&str) -> ()>,
 ) -> Result<(), TidiiError> {
     assert!(
@@ -15,6 +39,8 @@ pub fn scan_dir_for_old_files(
         "Not a directory: {}.",
         dir_path.display()
     );
+
+    let cutoff_days = value_or_default(cutoff_days, 2);
 
     log_fn("------ ");
     log_fn(&format!(
@@ -107,4 +133,12 @@ fn move_to_file_cabinet(
     rename(file_path, file_cabinet_file_name)?;
 
     Ok(())
+}
+
+pub fn value_or_default<T>(opt_value: Option<T>, default: T) -> T {
+    if let Some(value) = opt_value {
+        value
+    } else {
+        default
+    }
 }
